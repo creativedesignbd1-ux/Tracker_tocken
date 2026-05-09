@@ -1,0 +1,6 @@
+{
+  "name": "Claude Token Tracker",
+  "description": "Analyze and visualize your Claude Code CLI token usage stats with beautiful charts and cost breakdowns.",
+  "requestFramePermissions": [],
+  "majorCapabilities": []
+}

@@ -1,0 +1,66 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // 0. Global Safety Net
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // --- Helpers ---
+    function isSignedIn() {
+      return request.auth != null && request.auth.token.email_verified == true;
+    }
+    
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    // --- User Profiles ---
+    match /profiles/{userId} {
+      allow get: if isSignedIn();
+      allow list: if isSignedIn(); // For the leaderboard
+      
+      allow create: if isOwner(userId) && isValidUserProfile(incoming());
+      allow update: if isOwner(userId) && isValidUserProfile(incoming())
+        && incoming().diff(existing()).affectedKeys().hasOnly(['displayName', 'photoURL', 'totalCost', 'totalTokens', 'lastActive']);
+    }
+
+    function isValidUserProfile(data) {
+      return data.uid == request.auth.uid
+        && data.displayName is string && data.displayName.size() < 256
+        && data.email is string && data.email.size() < 256
+        && data.totalCost is number && data.totalCost >= 0
+        && data.totalTokens is number && data.totalTokens >= 0;
+    }
+
+    // --- Usage Submissions ---
+    match /submissions/{submissionId} {
+      // Users can see their own history
+      allow get: if isSignedIn() && existing().userId == request.auth.uid;
+      allow list: if isSignedIn() && resource.data.userId == request.auth.uid;
+      
+      allow create: if isSignedIn() && isValidSubmission(incoming()) && incoming().userId == request.auth.uid;
+      // No updates or deletes for audit integrity
+    }
+
+    function isValidSubmission(data) {
+      return data.userId == request.auth.uid
+        && data.cost is number && data.cost >= 0
+        && data.tokens is number && data.tokens >= 0
+        && data.timestamp is timestamp;
+    }
+  }
+}

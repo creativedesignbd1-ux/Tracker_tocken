@@ -1,0 +1,42 @@
+{
+  "entities": {
+    "UserProfile": {
+      "title": "User Profile",
+      "description": "User profile containing aggregated token usage stats.",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string", "description": "Unique user ID" },
+        "displayName": { "type": "string", "description": "User display name" },
+        "photoURL": { "type": "string", "description": "User profile photo URL" },
+        "email": { "type": "string", "description": "User email address" },
+        "totalCost": { "type": "number", "description": "Total cumulative spending" },
+        "totalTokens": { "type": "number", "description": "Total cumulative tokens" },
+        "lastActive": { "type": "string", "format": "date-time", "description": "Last time user uploaded stats" }
+      },
+      "required": ["uid", "displayName", "email", "totalCost", "totalTokens"]
+    },
+    "UsageSubmission": {
+      "title": "Usage Submission",
+      "description": "A single upload of token usage stats.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "timestamp": { "type": "string", "format": "date-time" },
+        "cost": { "type": "number" },
+        "tokens": { "type": "number" },
+        "statsData": { "type": "object", "description": "The full JSON payload from Claude stats" }
+      },
+      "required": ["userId", "timestamp", "cost", "tokens"]
+    }
+  },
+  "firestore": {
+    "/profiles/{userId}": {
+      "schema": "UserProfile",
+      "description": "Pubicly visible usage summaries for the leaderboard."
+    },
+    "/submissions/{submissionId}": {
+      "schema": "UsageSubmission",
+      "description": "Historical log of all uploads."
+    }
+  }
+}
